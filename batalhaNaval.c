@@ -1,67 +1,97 @@
 #include <stdio.h>
 
 #define TAM 10
-#define TAM_NAVIO 3
-#define MAR 0
 #define NAVIO 3
-
-int podePosicionar(int tabuleiro[TAM][TAM], int linha[], int coluna[]) {
-    for (int i = 0; i < TAM_NAVIO; i++) {
-        if (linha[i] < 0 || linha[i] >= TAM || coluna[i] < 0 || coluna[i] >= TAM)
-            return 0;
-        if (tabuleiro[linha[i]][coluna[i]] != MAR)
-            return 0; 
-    }
-    return 1;
-}
-
-void posicionarNavio(int tabuleiro[TAM][TAM], int linha[], int coluna[]) {
-    for (int i = 0; i < TAM_NAVIO; i++) {
-        tabuleiro[linha[i]][coluna[i]] = NAVIO;
-    }
-}
+#define AGUA 0
+#define HABILIDADE 5
+#define TAM_HABILIDADE 5  
 
 void imprimirTabuleiro(int tabuleiro[TAM][TAM]) {
     printf("   ");
-    for (int i = 0; i < TAM; i++)
-        printf("%d ", i);
+    for (int i = 0; i < TAM; i++) printf("%d ", i);
     printf("\n");
 
     for (int i = 0; i < TAM; i++) {
         printf("%2d: ", i);
         for (int j = 0; j < TAM; j++) {
-            printf("%d ", tabuleiro[i][j]);
+            if (tabuleiro[i][j] == AGUA) printf(". ");
+            else if (tabuleiro[i][j] == NAVIO) printf("N ");
+            else if (tabuleiro[i][j] == HABILIDADE) printf("* ");
+            else printf("? ");
         }
         printf("\n");
+    }
+}
+
+void aplicarHabilidade(int tabuleiro[TAM][TAM], int matriz[TAM_HABILIDADE][TAM_HABILIDADE], int origem_l, int origem_c) {
+    int offset = TAM_HABILIDADE / 2;
+    for (int i = 0; i < TAM_HABILIDADE; i++) {
+        for (int j = 0; j < TAM_HABILIDADE; j++) {
+            if (matriz[i][j] == 1) {
+                int l = origem_l - offset + i;
+                int c = origem_c - offset + j;
+                if (l >= 0 && l < TAM && c >= 0 && c < TAM && tabuleiro[l][c] == AGUA) {
+                    tabuleiro[l][c] = HABILIDADE;
+                }
+            }
+        }
+    }
+}
+
+void criarCone(int matriz[TAM_HABILIDADE][TAM_HABILIDADE]) {
+    for (int i = 0; i < TAM_HABILIDADE; i++) {
+        for (int j = 0; j < TAM_HABILIDADE; j++) {
+            matriz[i][j] = (j >= TAM_HABILIDADE / 2 - i && j <= TAM_HABILIDADE / 2 + i) ? 1 : 0;
+        }
+    }
+}
+
+void criarCruz(int matriz[TAM_HABILIDADE][TAM_HABILIDADE]) {
+    for (int i = 0; i < TAM_HABILIDADE; i++) {
+        for (int j = 0; j < TAM_HABILIDADE; j++) {
+            matriz[i][j] = (i == TAM_HABILIDADE / 2 || j == TAM_HABILIDADE / 2) ? 1 : 0;
+        }
+    }
+}
+
+void criarOctaedro(int matriz[TAM_HABILIDADE][TAM_HABILIDADE]) {
+    int centro = TAM_HABILIDADE / 2;
+    for (int i = 0; i < TAM_HABILIDADE; i++) {
+        for (int j = 0; j < TAM_HABILIDADE; j++) {
+            matriz[i][j] = (abs(i - centro) + abs(j - centro) <= centro) ? 1 : 0;
+        }
+    }
+}
+
+void posicionarNavioHorizontal(int tabuleiro[TAM][TAM], int l, int c) {
+    for (int i = 0; i < 3 && c + i < TAM; i++) {
+        tabuleiro[l][c + i] = NAVIO;
+    }
+}
+
+void posicionarNavioDiagonal(int tabuleiro[TAM][TAM], int l, int c) {
+    for (int i = 0; i < 3 && l + i < TAM && c + i < TAM; i++) {
+        tabuleiro[l + i][c + i] = NAVIO;
     }
 }
 
 int main() {
     int tabuleiro[TAM][TAM] = {0};
 
-    int hLinha[] = {2, 2, 2};
-    int hColuna[] = {4, 5, 6};
+    posicionarNavioHorizontal(tabuleiro, 2, 4); 
+    posicionarNavioDiagonal(tabuleiro, 5, 5);   
 
-    int vLinha[] = {5, 6, 7};
-    int vColuna[] = {7, 7, 7};
+    int cone[TAM_HABILIDADE][TAM_HABILIDADE];
+    int cruz[TAM_HABILIDADE][TAM_HABILIDADE];
+    int octaedro[TAM_HABILIDADE][TAM_HABILIDADE];
 
-    int d1Linha[] = {0, 1, 2};
-    int d1Coluna[] = {0, 1, 2};
+    criarCone(cone);
+    criarCruz(cruz);
+    criarOctaedro(octaedro);
 
-    int d2Linha[] = {7, 8, 9};
-    int d2Coluna[] = {2, 1, 0};
-
-    if (podePosicionar(tabuleiro, hLinha, hColuna))
-        posicionarNavio(tabuleiro, hLinha, hColuna);
-
-    if (podePosicionar(tabuleiro, vLinha, vColuna))
-        posicionarNavio(tabuleiro, vLinha, vColuna);
-
-    if (podePosicionar(tabuleiro, d1Linha, d1Coluna))
-        posicionarNavio(tabuleiro, d1Linha, d1Coluna);
-
-    if (podePosicionar(tabuleiro, d2Linha, d2Coluna))
-        posicionarNavio(tabuleiro, d2Linha, d2Coluna);
+    aplicarHabilidade(tabuleiro, cone, 1, 1);        
+    aplicarHabilidade(tabuleiro, cruz, 4, 2);        
+    aplicarHabilidade(tabuleiro, octaedro, 7, 7);    
 
     imprimirTabuleiro(tabuleiro);
 
